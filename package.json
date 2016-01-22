@@ -1,0 +1,66 @@
+{
+  "name": "Template-Modules",
+  "version": "2.0.0",
+  "description": "Simple boilerplate with coffee / stylus / jade / webpack",
+  "homepage": "https://github.com/Makio64/Template-Modules",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Makio64/Template-Modules"
+  },
+  "bugs": {
+    "url": "https://github.com/Makio64/Template-Modules/issues"
+  },
+  "keywords": [
+    "boilerplate",
+    "starter",
+    "webpack",
+    "stylus",
+    "jade",
+    "coffee"
+  ],
+  "authors": [
+    "david.ronai <david.ronai@gmail.com>"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": "*",
+    "npm": "*"
+  },
+	"peerDependencies": {
+		"browser-sync": "*",
+		"jade": "*",
+		"nib": "*",
+		"stylus": "*",
+		"coffee-script": "*",
+		"webpack": "*"
+	},
+  "devDependencies": {
+    "@songkick/injectassets": "*",
+    "@songkick/replaceinfiles": "*",
+    "browser-sync-webpack-plugin": "*",
+    "coffee-loader": "*",
+    "hashmark": "*",
+    "jade-html-loader": "*",
+    "jade-loader": "*",
+    "json-loader": "*",
+    "raw-loader": "*",
+    "script-loader": "*",
+    "shader-loader": "*",
+    "signals": "*"
+  },
+  "scripts": {
+    "start": "npm run preBuild && npm run jade:dev -s & npm run js:dev & npm run -s css:dev",
+    "build": "for step in 'preBuild' 'preDist' 'jade:dist' 'js:dist' 'css:dist' 'toDist' 'dist:mark' 'dist:html'; do npm run $step; done",
+    "preBuild": "rm -rf build/ && mkdir build/ && mkdir build/css && mkdir build/js",
+    "preDist": "rm -rf dist/ && mkdir dist/",
+    "toDist": "cp -rf build/** dist",
+    "dist:mark": "hashmark build/**/*.(js|css) 'build/{name}.{hash}.{ext}' --asset-map dist/manifest.json -r",
+    "dist:html": "replaceinfiles -r dist/manifest.json -s build/index.html -d 'build/{base}'",
+    "js:dev": "webpack --progress --colors -w",
+    "js:dist": "webpack --progress --colors --optimize-minimize --optimize-occurence-order --optimize-dedupe",
+    "jade:dev": "jade src/jade/index.jade -P -w -o build",
+    "jade:dist": "jade src/jade/index.jade -P -o build",
+    "css:dev": "stylus -w src/stylus/main.styl -o build/css -u nib --sourcemap",
+    "css:dist": "stylus -u nib src/stylus/main.styl -o build/css"
+  }
+}
