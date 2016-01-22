@@ -1,17 +1,16 @@
 {
-  "name": "Template-Modules",
-  "version": "2.0.0",
-  "description": "Simple boilerplate with coffee / stylus / jade / webpack",
-  "homepage": "https://github.com/Makio64/Template-Modules",
+  "name": "Starter",
+  "version": "1.0.0",
+  "description": "starter with coffee / stylus / jade / webpack",
+  "homepage": "https://github.com/Makio64/starter",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Makio64/Template-Modules"
+    "url": "https://github.com/Makio64/starter"
   },
   "bugs": {
-    "url": "https://github.com/Makio64/Template-Modules/issues"
+    "url": "https://github.com/Makio64/starter/issues"
   },
   "keywords": [
-    "boilerplate",
     "starter",
     "webpack",
     "stylus",
