@@ -5,7 +5,8 @@
 
 require("THREE.MeshLine")
 
-Stage3d 		= require("makio/core/Stage3d")
+Stage3d = require("makio/core/Stage3d")
+Stage = require("makio/core/Stage")
 
 class Line extends THREE.Mesh
 
@@ -19,30 +20,39 @@ class Line extends THREE.Mesh
 		options.opacity ?= 1
 
 		material = new THREE.MeshLineMaterial(
-			useMap: false,
+			time: 0,
+			map: options.texture,
 			color: new THREE.Color( options.color ),
 			opacity: options.opacity,
 			transparent: true,
 			resolution: Stage3d.resolution,
 			sizeAttenuation: false,
 			lineWidth: options.width,
-			blending: THREE.AdditiveBlending,
+			# blending: THREE.MultiplyBlending,
+			side:THREE.DoubleSide
 			near: Stage3d.camera.near,
 			far: Stage3d.camera.far,
-			depthTest:false,
-			depthWrite:false
+			# depthTest:false,
+			depthWrite:false,
+			fog:true
 		)
+
 		super(line.geometry,material)
+		Stage.onUpdate.add(@update)
 		return
 
-	@FromTo:(p1,p2,options={})->
-		points = new Float32Array(6)
-		points[0] = p1.x
-		points[1] = p1.y
-		points[2] = p1.z
-		points[3] = p2.x
-		points[4] = p2.y
-		points[5] = p2.z
+	update:(dt)=>
+		@material.uniforms.time.value += dt/1000
+		return
+
+	@FromTo:(p1,p2,options={},step = 2)->
+		points = new Float32Array(step*3)
+		for i in [0...step] by 1
+			percent = i / (step-1)
+			k = i*3
+			points[k+0] = p1.x * ( 1 - percent ) + p2.x * percent
+			points[k+1] = p1.y * ( 1 - percent ) + p2.y * percent
+			points[k+2] = p1.z * ( 1 - percent ) + p2.z * percent
 		return new Line(points,options)
 
 	@FromPoints:(points,options={})->

@@ -30,7 +30,6 @@ class ParticleFBO extends THREE.Points
 		material.minFilter = THREE.NearestFilter
 		material.magFilter = THREE.NearestFilter
 		@simulationMaterial = material
-		console.log(material)
 		@fbo.setSimulation material
 		return
 

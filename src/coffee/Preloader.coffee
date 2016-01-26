@@ -43,6 +43,9 @@ class Preloader
 				loader = document.querySelector(".loading")
 				loader.className += ' hideOut'
 				@loaderBorder.hide(true)
+				setTimeout(()=>
+					document.querySelector(".loading").parentNode.removeChild(loader)
+				,1000)
 			,700)
 		return
 

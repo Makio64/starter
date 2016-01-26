@@ -24,4 +24,7 @@ require('./Interactions').onKeyDown.add((e)->
 		toogle()
 )
 
+if(document.location.hostname != "localhost")
+	toogle()
+	
 module.exports = GUI

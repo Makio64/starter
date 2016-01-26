@@ -21,7 +21,8 @@ class Stage3d
 	@isActivated 			= false
 
 	@clearAuto				= false
-	@clearAlpha				= 0.1
+	@clearAlpha				= 1
+	@clearColor				= 0xFFFFFF
 
 	@init = (options)=>
 
@@ -32,19 +33,23 @@ class Stage3d
 
 		@onBeforeRenderer = new signals()
 
+		@clearColor = if options.background then options.background else 0xFFFFFF
+
 		w = window.innerWidth
 		h = window.innerHeight
+
+		@resolution = new THREE.Vector2(w,h)
 
 		@camera = new THREE.PerspectiveCamera( 50, w / h, 1, 1000000 )
 		@scene = new THREE.Scene()
 		@scene2 = new THREE.Scene()
 		@orthoCamera = new THREE.OrthographicCamera( - 0.5, 0.5, 0.5, - 0.5, 0, 1 )
-		@mesh =  new THREE.Mesh( new THREE.PlaneBufferGeometry( 1, 1 ), new THREE.MeshBasicMaterial({color:0,transparent:true,opacity:@clearAlpha}) )
+		@mesh =  new THREE.Mesh( new THREE.PlaneBufferGeometry( 1, 1 ), new THREE.MeshBasicMaterial({color:@clearColor,transparent:true,opacity:@clearAlpha}) )
 		@scene2.add( @mesh )
 
 		transparent = options.transparent||false
 		antialias = options.antialias||false
-		@renderer = new THREE.WebGLRenderer({alpha:transparent,antialias:antialias,preserveDrawingBuffer:true})
+		@renderer = new THREE.WebGLRenderer({alpha:transparent,antialias:antialias,preserveDrawingBuffer:false})
 		@renderer.setPixelRatio( window.devicePixelRatio )
 		@renderer.domElement.className = 'three'
 		@setColorFromOption(options)
@@ -56,12 +61,8 @@ class Stage3d
 		return
 
 	@setColorFromOption = (options)=>
-		if(options.transparent != undefined)
-			@renderer.alpha = options.transparent
-		if(options.background?)
-			if(options.transparent) then alpha = 0
-			else alpha = 1
-			@renderer.setClearColor( parseInt(options.background), @clearAlpha )
+		@clearAlpha = if options.clearAlpha == undefined then 1 else options.clearAlpha
+		@renderer.setClearColor( parseInt(options.background), @clearAlpha )
 		return
 
 	@activate = ()=>
@@ -138,14 +139,20 @@ class Stage3d
 				@composer.pass( pass )
 			@composer.toScreen()
 		else
+			@renderer.clear()
 			@renderer.render(@scene, @camera)
 		return
 
 	@resize = ()=>
+		w = window.innerWidth
+		h = window.innerHeight
+		@resolution.x = w
+		@resolution.y = h
+
 		if @renderer
-			@camera.aspect = window.innerWidth / window.innerHeight
+			@camera.aspect = w / h
 			@camera.updateProjectionMatrix()
-			@renderer.setSize( window.innerWidth, window.innerHeight )
+			@renderer.setSize( w, h )
 			@renderer.setPixelRatio( window.devicePixelRatio )
 			@render(0)
 		if @composer
