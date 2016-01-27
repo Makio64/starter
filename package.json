@@ -48,6 +48,7 @@
     "signals": "*"
   },
   "scripts": {
+    "preinstall" : "npm i -g browser-sync jade stylus coffee-script webpack",
     "start": "npm run preBuild && npm run jade:dev -s & npm run js:dev & npm run -s css:dev",
     "build": "for step in 'preBuild' 'preDist' 'jade:dist' 'js:dist' 'css:dist' 'toDist'; do npm run $step; done",
     "preBuild": "rm -rf build/ && mkdir build/ && mkdir build/css && mkdir build/js",
