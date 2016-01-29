@@ -24,6 +24,7 @@ module.exports = {
 		root:[
 			__dirname+'/src/coffee',
 			__dirname+'/src/jade',
+			__dirname+'/src/glsl',
 			__dirname+'/static/data/',
 			__dirname+'/static/vendors/'
 		],
@@ -56,7 +57,7 @@ module.exports = {
 		new BrowserSyncPlugin({
 			host: 'localhost',
 			port: 9000,
-			server: { baseDir: ['build','static'] },
+			server: { baseDir: ['build','static','src'] },
 			open: true,
 			files:['build/**/*','static/**/*']
 		}),
