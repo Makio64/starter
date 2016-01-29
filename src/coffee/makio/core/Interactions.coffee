@@ -13,6 +13,8 @@ class Interactions
 	@altKey = false
 	@ctrlKey = false
 	@mouseIsDown = false
+	@noDefaultWheel = false
+
 	@onKeyDown = new signals()
 	@onKeyUp = new signals()
 
@@ -73,15 +75,17 @@ class Interactions
 		)
 		window.addEventListener('mousewheel', (e)=>
 			@onWheel.dispatch(@getDelta(e))
-			e.stopPropagation()
-			e.stopImmediatePropagation()
-			e.preventDefault()
+			if @noDefaultWheel
+				e.stopPropagation()
+				e.stopImmediatePropagation()
+				e.preventDefault()
 		)
 		window.addEventListener('DOMMouseScroll', (e)=>
 			@onWheel.dispatch(@getDelta(e))
-			e.stopPropagation()
-			e.stopImmediatePropagation()
-			e.preventDefault()
+			if @noDefaultWheel
+				e.stopPropagation()
+				e.stopImmediatePropagation()
+				e.preventDefault()
 		)
 		window.addEventListener('keydown', (e)=>
 			@metaKey = e.metaKey
@@ -159,7 +163,11 @@ class Interactions
 
 	# http://stackoverflow.com/questions/5527601/normalizing-mousewheel-speed-across-browsers
 	@getDelta: (e)=>
-		return if(e.detail < 0 || e.wheelDelta > 0) then 1 else -1
+		return {
+			direction : if(e.detail < 0 || e.wheelDelta > 0) then 1 else -1
+			detail: e.detail || e.wheelDelta
+			original:e
+		}
 
 	@init()
 
