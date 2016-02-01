@@ -3,7 +3,7 @@
 # @author David Ronai / Makiopolis.com / @Makio64
 #
 
-StageRenderer = require('core/StageRenderer')
+Stage = require('makio/core/Stage')
 
 class Stage2d
 
@@ -37,8 +37,8 @@ class Stage2d
 		@background = new PIXI.Graphics()
 		@redrawBackground()
 		document.body.appendChild( @renderer.view )
-		StageRenderer.onUpdate.add(@render)
-		StageRenderer.onResize.add(@resize)
+		Stage.onUpdate.add(@render)
+		Stage.onResize.add(@resize)
 		@stage.addChild(@background)
 		@render()
 		return
@@ -50,8 +50,8 @@ class Stage2d
 		@renderer.view.parentNode.removeChild(@renderer.view)
 		@stage.removeChild(@background)
 		@background = null
-		StageRenderer.onUpdate.remove(@render)
-		StageRenderer.onResize.remove(@resize)
+		Stage.onUpdate.remove(@render)
+		Stage.onResize.remove(@resize)
 		return
 
 	@redrawBackground:()=>
@@ -65,6 +65,10 @@ class Stage2d
 		return
 
 	@addChild:(o)=>
+		@stage.addChild(o)
+		return
+
+	@add:(o)=>
 		@stage.addChild(o)
 		return
 
