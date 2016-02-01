@@ -1,15 +1,10 @@
-#
-# - Easy way to connect midiController to Parameters
-# - Analyse the music & the detect beat
-# Inspired by datgui & airtightinteractive https://www.airtightinteractive.com/2013/10/making-audio-reactive-visuals
-# @author : David Ronai / @Makio64 / makiopolis.com
-#
-
-gui		= require('makio/core/GUI')
-Stage 	= require('makio/core/Stage')
-Midi 	= require('makio/audio/Midi')
 JsUtils = require('makio/utils/JsUtils')
-Signal 	= require('signals')
+Midi = require('makio/audio/Midi')
+
+gui = require('makio/core/GUI')
+Stage = require('makio/core/Stage')
+
+Signal = require('signals')
 
 class VJ
 
@@ -17,9 +12,9 @@ class VJ
 	@levelsData = [] #levels of each frequecy - from 0 - 1 . no sound is 0. Array [levelsCount]
 	@levelHistory = []
 
-	@BEAT_HOLD_TIME = 150 #num of frames to hold a beat
-	@BEAT_DECAY_RATE = 0.98
-	@BEAT_MIN = 0.02 #level less than this is no beat
+	@BEAT_HOLD_TIME = 0.17 #num of frames to hold a beat
+	@BEAT_DECAY_RATE = 0.96
+	@BEAT_MIN = 0.13 #level less than this is no beat
 
 	#BPM STUFF
 	@volume = 0
@@ -37,9 +32,9 @@ class VJ
 
 	@controllers = []
 
-
 	@init=(audioContext)=>
 		@onBeat = new Signal()
+		@controls = []
 		@analyser = audioContext.createAnalyser()
 		@analyser.smoothingTimeConstant = 0.3
 		@analyser.fftSize = 2048
@@ -49,27 +44,27 @@ class VJ
 		@timeByteData = new Uint8Array(@binCount)
 		for i in [0...256]
 			@levelHistory.push(0)
+		@mapToMidi(VJ,'BEAT_HOLD_TIME',13).minMax(0,100).onChange(()=>
+			console.log('beat_hold')
+		)
+		@mapToMidi(VJ,'BEAT_DECAY_RATE',14).minMax(0.9,1)
+		@mapToMidi(VJ,'BEAT_MIN',15).minMax(0,1)
+
 		return
 
-	@mapToMidi:(obj,value,midi)=>
-		switch JsUtils.type(obj[value])
-			when JsUtils.TYPES.number
-				return new VJNumberController(obj,value,midi)
-				break
-			when JsUtils.TYPES.boolean
-				return new VJBooleanController(obj,value,midi)
-				break
-			when JsUtils.TYPES['[object Function]']
-				return new VJFunctionController(obj,value,midi)
-				break
-		return
+	@mapToMidi:(obj,value,midi,isBoolean=false)=>
+		if(isBoolean)
+			return new VJBooleanController(obj,value,midi)
+		else
+			return new VJNumberController(obj,value,midi)
+		# c = new VJFunctionController(obj,value,midi)
+		@controls.push(c)
+		return c
 
 
-	@update=(dt)=>
+	@update=()=>
 		if(@analyser == null)
 			return
-
-		# beatTime += dt
 
 		@analyser.getByteFrequencyData(@freqByteData)
 		@analyser.getByteTimeDomainData(@timeByteData)
@@ -83,11 +78,11 @@ class VJ
 				sum += @freqByteData[(i * @levelBins) + j]
 				@levelsData[i] = sum / @levelBins / 256
 
-		@detectBeat(dt)
+		@detectBeat()
 		@bpmTime = (new Date().getTime() - @bpmStart)/@msecsAvg
 		return
 
-	@detectBeat = (dt)=>
+	@detectBeat = ()=>
 		sum = 0
 		for j in [0...@levelsCount] by 1
 			sum += @levelsData[j]
@@ -97,14 +92,14 @@ class VJ
 		@levelHistory.push(@volume)
 		@levelHistory.shift(1)
 
-		if (@volume  > @beatCutOff && @volume > @BEAT_MIN && @beatTime >= @BEAT_HOLD_TIME)
+		if (@volume  > @beatCutOff && @volume > @BEAT_MIN)
 			# console.log("BEAT")
 			@onBeat.dispatch()
 			@beatCutOff = @volume *1.1
 			@beatTime = 0
 		else
 			if (@beatTime <= @BEAT_HOLD_TIME)
-				@beatTime+=dt
+				@beatTime++
 			else
 				@beatCutOff *= @BEAT_DECAY_RATE
 				@beatCutOff = Math.max(@beatCutOff,@BEAT_MIN)
@@ -119,51 +114,73 @@ class VJNumberController
 		@min = 0
 		@max = 1
 		@easing = .2
+		@easingFunction = null#(t)-> return t;
 		Midi.onMessage.add(@onMidi)
 		Stage.onUpdate.add(@onUpdate)
 		return
 
 	minMax:(@min,@max)=>
-		return
+		return @
 
-	ease:(@easing)=>
-		return
+	ease:(@easing,easingFunction)=>
+		if(easingFunction)
+			@easingFunction = easingFunction
+		return @
 
 	onMidi:(e)=>
 		if(e.note==@midi)
 			@targetValue = @min + e.velocity * (@max - @min)
-			console.log(@min,e.velocity,@max,@targetValue)
+			if @onChangeCB then @onChangeCB(@targetValue)
 			return
 		return
 
 	onUpdate:(dt)=>
-		@obj[@value] +=  (@targetValue-@obj[@value])*@easing
-		if(@targetValue==0 && @obj[@value] <0.01) then @obj[@value] = 0
+		if(@easingFunction)
+			t = @easingFunction(@targetValue)
+		else
+			t = @targetValue
+		@obj[@value] +=  (t-@obj[@value])*@easing
+		if(t==0 && @obj[@value] <0.01) then @obj[@value] = 0
 		return
 
-class VJBooleanController
-	constructor:(@obj, @value, @midi)->
+	onChange:(@onChangeCB)=>
+		return @
+
+class VJBooleanController extends VJNumberController
+	constructor:(@obj, @value, @midi, @switchMode=true)->
+		super(@obj, @value, @midi)
+		@easing = 1
+		@isOn = (@obj[@value] == 1 || @obj[@value] == true)
+		if(@isOn)
+			Midi.yellowLed(@midi)
+		else
+			Midi.amberLed(@midi)
 		return
 
 	onMidi:(e)=>
-		if(e.key==@midi)
-			@targetValue = if e.value then 0 else 1
-			return
+		if(e.note==@midi)
+			if(@switchMode)
+				if e.type==128
+					@isOn = !@isOn
+					if @isOn
+						Midi.yellowLed(@midi)
+					else
+						Midi.amberLed(@midi)
+					@targetValue = if @isOn then 0 else 1
+					if @onChangeCB then @onChangeCB(@targetValue)
 		return
 
-class VJFunctionController
+class VJFunctionController extends VJNumberController
 	constructor:(@obj, @value, @midi)->
+		Midi.onMessage.add(@onMidi)
 		return
 
 	onMidi:(e)=>
-		if(e.key==@midi)
-			@targetValue = e.value
-			return
+		if(e.note==@midi)
+			if e.type==128
+				@obj[@value]()
 		return
 
-VJ.mapToMidi(VJ,'BEAT_HOLD_TIME',13).minMax(0,100)
-VJ.mapToMidi(VJ,'BEAT_DECAY_RATE',14).minMax(0.9,1)
-VJ.mapToMidi(VJ,'BEAT_MIN',15).minMax(0,1)
 
 # gui.add(VJ,'BEAT_HOLD_TIME',0,100).listen()
 # gui.add(VJ,'BEAT_DECAY_RATE',0.9,1).listen()
