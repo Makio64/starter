@@ -35,8 +35,6 @@
     "imageoptim-cli": "*"
 	},
   "devDependencies": {
-    "@songkick/injectassets": "*",
-    "@songkick/replaceinfiles": "*",
     "browser-sync-webpack-plugin": "*",
     "coffee-loader": "*",
     "hashmark": "*",
@@ -55,8 +53,6 @@
     "preDist": "rm -rf dist/ && mkdir dist/ && mkdir dist/glsl",
     "toDist": "cp -rf build/** dist & cp -rf static/** dist & cp -rf src/glsl/** dist/glsl && rm -rf dist/vendors/",
     "optimImage": "imageOptim -d dist/",
-    "dist:mark": "hashmark build/**/*.(js|css) 'build/{name}.{hash}.{ext}' --asset-map dist/manifest.json -r",
-    "dist:html": "replaceinfiles -r dist/manifest.json -s build/index.html -d 'build/{base}'",
     "js:dev": "webpack --progress --colors -w",
     "js:dist": "webpack --progress --colors --optimize-minimize --optimize-occurence-order --optimize-dedupe",
     "jade:dev": "jade src/jade/index.jade -P -w -o build",
