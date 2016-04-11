@@ -1,16 +1,10 @@
-#
-# Common Random need in many projects
-# By David Ronai / Makio64 / makiopolis.com
-#
-
 class Random
 
-	@data=( width, height, size )->
-		l = width * height * 3
-		data = new Float32Array( l )
-		while( l-- )
-			data[l] = ( Math.random()-.5 ) * size
-		return data
+	@floatArray = ( size, range )->
+		array = new Float32Array( size )
+		for i in [0...size]
+			array[size] = ( Math.random()-.5 ) * range
+		return array
 
 	@between=(min,max)->
 		return min+Math.random()*(max-min)
@@ -18,7 +12,20 @@ class Random
 	@choice=(choice1,choice2)->
 		return (if Math.random()<.5 then choice1 else choice2)
 
+	@pickIn=(array)->
+		return array[Math.floor(Math.random()*array.length)]
+
 	@shuffleArray = (array)->
+		l = array.length
+		for i in [0...l] by 1
+			j = Math.floor(Math.random() * l)
+			temp = array[i]
+			array[i] = array[j]
+			array[j] = temp
+			
+		return array;
+
+	@shuffleArrayVec3 = (array)->
 		l = array.length/3
 		for k in [0...l] by 1
 			i = k*3
@@ -37,5 +44,6 @@ class Random
 			array[j+2] = temp
 
 		return array;
+
 
 module.exports = Random

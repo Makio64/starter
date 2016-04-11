@@ -165,7 +165,7 @@ class Interactions
 	@getDelta: (e)=>
 		return {
 			direction : if(e.detail < 0 || e.wheelDelta > 0) then 1 else -1
-			detail: e.detail || e.wheelDelta
+			delta: e.detail || e.wheelDelta
 			original:e
 		}
 

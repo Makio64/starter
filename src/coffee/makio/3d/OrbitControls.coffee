@@ -222,9 +222,9 @@ class OrbitControls
 		@mouse.set(e.x, e.y)
 		return
 
-	onWheel:( delta )=>
+	onWheel:( e )=>
 		if( @noZoom ) then return
-		if( delta < 0 ) then @zoomOut()
+		if( e.delta < 0 ) then @zoomOut()
 		else @zoomIn()
 		return
 
