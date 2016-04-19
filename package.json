@@ -32,12 +32,10 @@
 		"stylus": "*",
 		"coffee-script": "*",
 		"webpack": "*",
-    "imageoptim-cli": "*"
 	},
   "devDependencies": {
     "browser-sync-webpack-plugin": "*",
     "coffee-loader": "*",
-    "hashmark": "*",
     "jade-html-loader": "*",
     "jade-loader": "*",
     "json-loader": "*",
@@ -55,8 +53,8 @@
     "preDist": "rm -rf dist/ && mkdir dist/",
     "toDist": "cp -rf build/** dist & cp -rf static/** dist",
 
-    "js:dev": "webpack --progress --colors -w",
-    "js:dist": "webpack --progress --colors --optimize-minimize --optimize-occurence-order --optimize-dedupe -p",
+    "js:dev": "webpack --progress -c -w -d --display-cached",
+    "js:dist": "webpack --progress -c --optimize-minimize --optimize-occurence-order --optimize-dedupe -p",
 
     "jade:dev": "jade src/jade/index.jade -P -w -o build",
     "jade:dist": "jade src/jade/index.jade -P -o build",
