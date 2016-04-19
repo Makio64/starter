@@ -1,28 +1,36 @@
-// stat-js reworked by JordanDelcros
-// https://github.com/JordanDelcros/stats-js
+// stat-js reworked to use canvas
 (function( self ){
 
 	var Stats = function( realTime ){
+
 		if( this instanceof Stats ){
+
 			return Stats.methods.initialize(realTime);
+
 		}
 		else {
+
 			return new Stats(realTime);
+
 		};
+
 	};
 
+	var PIXEL_RATIO = (window.devicePixelRatio || 1);
+
 	var SIZE = {
-		WIDTH: 80,
-		HEIGHT: 50,
+		WIDTH: 80 * PIXEL_RATIO,
+		HEIGHT: 50 * PIXEL_RATIO,
 		FRAMES: {
-			WIDTH: 74,
-			HEIGHT: 32,
-			X: 3,
-			Y: 15
+			WIDTH: 74 * PIXEL_RATIO,
+			HEIGHT: 32 * PIXEL_RATIO,
+			X: 3 * PIXEL_RATIO,
+			Y: 15 * PIXEL_RATIO
 		},
 		TEXT: {
-			X: 75,
-			Y: 10
+			HEIGHT: 8 * PIXEL_RATIO,
+			X: 75 * PIXEL_RATIO,
+			Y: 10 * PIXEL_RATIO
 		}
 	};
 
@@ -45,7 +53,12 @@
 		PING: {
 			DATAS: "#FFFFFF",
 			FRAMES: "#555555",
-			BACKGROUND: "#000000"
+			BACKGROUND: "#222222"
+		},
+		CUSTOM: {
+			DATAS: "#666",
+			FRAMES: "#0F0F0F",
+			BACKGROUND: "#242424"
 		}
 	};
 
@@ -53,7 +66,8 @@
 		FPS: 0,
 		MS: 1,
 		MB: 2,
-		PING: 3
+		PING: 3,
+		CUSTOM: 4
 	};
 
 	var SUPPORT_MODE_MB = (window.performance != undefined && window.performance.memory != undefined && window.performance.memory.usedJSHeapSize != undefined ? true : false);
@@ -63,11 +77,16 @@
 
 			this.mode = MODES.FPS;
 
-			this.realTime = realTime || false;
+			this.realTime = (realTime || false);
 
 			this.frameTime = 0;
+
 			this.beginTime = 0;
 			this.endTime = 0;
+
+			this.isPinging = false;
+			this.beginPinging = 0;
+			this.endPinging = 0;
 
 			this.fps = {
 				value: 0,
@@ -101,10 +120,22 @@
 				array: new Array(SIZE.FRAMES.WIDTH)
 			};
 
+			this.customs = []
+			this.customIndex = 0
+
 			this.domElement = document.createElement("canvas");
+			this.domElement.className = "statsjs";
 
 			this.domElement.width = SIZE.WIDTH;
 			this.domElement.height = SIZE.HEIGHT;
+
+			this.domElement.style.width = (SIZE.WIDTH / PIXEL_RATIO) + "px";
+			this.domElement.style.height = (SIZE.HEIGHT / PIXEL_RATIO) + "px";
+
+			this.domElement.style.position = 'absolute';
+			this.domElement.style.top = 0;
+			this.domElement.style.left = 0;
+			this.domElement.style.zIndex = 100000;
 
 			this.domElement.addEventListener("click", function( event ){
 
@@ -115,7 +146,7 @@
 			this.context = this.domElement.getContext("2d");
 
 			this.context.imageSmoothingEnabled = false;
-			this.context.font = "bold 8px sans-serif";
+			this.context.font = "bold " + SIZE.TEXT.HEIGHT + "px sans-serif";
 			this.context.textAlign = "right";
 
 			return this;
@@ -123,14 +154,14 @@
 		},
 		switchMode: function(){
 
-			if( this.mode == MODES.FPS ){
+			if( this.mode === MODES.FPS ){
 
 				this.mode = MODES.MS;
 
 			}
-			else if( this.mode == MODES.MS ){
+			else if( this.mode === MODES.MS ){
 
-				if( SUPPORT_MODE_MB == true ){
+				if( SUPPORT_MODE_MB === true ){
 
 					this.mode = MODES.MB;
 
@@ -142,25 +173,35 @@
 				};
 
 			}
-			else if( this.mode == MODES.MB ){
+			else if( this.mode === MODES.MB ){
 
 				this.mode = MODES.PING;
 
 			}
-			else if( this.mode == MODES.PING ){
+			else if( this.mode === MODES.PING ){
 
-				this.mode = MODES.FPS;
+				this.mode = (this.customs.length>0) ? MODES.CUSTOM : MODES.FPS;
 
-			};
+			}
+			else if( this.mode === MODES.CUSTOM ){
+
+				this.customIndex++
+
+				if(this.customIndex>=this.customs.length){
+
+					this.mode = MODES.FPS
+					this.customIndex = 0
+
+				}
+
+			}
 
 			this.draw();
 
 		},
 		begin: function(){
 
-			var now = window.performance.now();
-
-			this.beginTime = now;
+			this.beginTime = window.performance.now();
 
 		},
 		end: function(){
@@ -177,7 +218,7 @@
 			this.ms.min = Math.min(this.ms.current, this.ms.min);
 			this.ms.max = Math.max(this.ms.current, this.ms.max);
 
-			if( SUPPORT_MODE_MB == true ){
+			if( SUPPORT_MODE_MB === true ){
 
 				this.mb.current = Math.round(window.performance.memory.usedJSHeapSize * 0.000000954);
 				this.mb.min = Math.min(this.mb.current, this.mb.min);
@@ -185,11 +226,16 @@
 
 			};
 
-			this.ping.current = 10;
-			this.ping.min = Math.min(this.ping.current, this.ping.min);
-			this.ping.max = Math.max(this.ping.current, this.ping.max);
+			for (var i = 0; i < this.customs.length; i++) {
+				var custom = this.customs[i]
+				custom.current = custom.object[custom.key]
+				custom.value = custom.current
+				custom.min = Math.min(custom.current, custom.min);
+				custom.max = Math.max(custom.current, custom.max);
+				custom.array[custom.array.length - 1] = custom.value;
+			}
 
-			if( this.realTime == true ){
+			if( this.realTime === true ){
 
 				this.fps.value = this.fps.current;
 
@@ -197,7 +243,7 @@
 
 			};
 
-			if( deltaTime < 1000 && this.realTime == true ){
+			if( deltaTime < 1000 && this.realTime === true ){
 
 				this.draw();
 
@@ -221,7 +267,13 @@
 					this.ping.array[index] = this.ping.array[index + 1];
 
 				};
-
+				for (var i = 0; i < this.customs.length; i++) {
+					var custom = this.customs[i]
+					for( var index = 0, length = SIZE.FRAMES.WIDTH; index < length; index++ ){
+						custom.array[index] = custom.array[index + 1];
+					}
+					custom.array[custom.array.length - 1] = custom.value;
+				}
 				this.fps.array[this.fps.array.length - 1] = this.fps.value;
 				this.ms.array[this.ms.array.length - 1] = this.ms.value;
 				this.mb.array[this.mb.array.length - 1] = this.mb.value;
@@ -234,24 +286,50 @@
 			};
 
 		},
+		beginPing: function(){
+
+			this.beginPinging = window.performance.now();
+
+		},
+		endPing: function(){
+
+			this.endPinging = window.performance.now();
+			this.ping.current = parseInt(this.endPinging - this.beginPinging);
+
+			this.ping.min = Math.min(this.ping.current, this.ping.min);
+			this.ping.max = Math.max(this.ping.current, this.ping.max);
+
+		},
+		addCustom: function(name, object, key){
+			this.customs.push({
+				name: name,
+				object: object,
+				key: key,
+				value: 0,
+				current: 0,
+				min: Infinity,
+				max: -Infinity,
+				array: new Array(SIZE.FRAMES.WIDTH)
+			})
+		},
 		draw: function(){
 
 			this.context.clearRect(0, 0, SIZE.WIDTH, SIZE.HEIGHT);
 
-			if( this.mode == MODES.FPS ){
+			if( this.mode === MODES.FPS ){
 
 				this.context.fillStyle = STYLE.FPS.BACKGROUND;
 				this.context.fillRect(0, 0, SIZE.WIDTH, SIZE.HEIGHT);
 
 				this.context.fillStyle = STYLE.FPS.FRAMES;
-				this.context.fillRect(3, 15, SIZE.FRAMES.WIDTH, SIZE.FRAMES.HEIGHT);
+				this.context.fillRect(SIZE.FRAMES.X, SIZE.FRAMES.Y, SIZE.FRAMES.WIDTH, SIZE.FRAMES.HEIGHT);
 
 				this.context.fillStyle = STYLE.FPS.DATAS;
 
-				var min = (this.fps.min == Infinity ? "∞" : this.fps.min);
-				var max = (this.fps.max == -Infinity ? "∞" : this.fps.max);
+				var min = (this.fps.min === Infinity ? "∞" : this.fps.min);
+				var max = (this.fps.max === -Infinity ? "∞" : this.fps.max);
 
-				if( this.realTime == true ){
+				if( this.realTime === true ){
 
 					this.context.fillText(this.fps.current + " FPS (" + min + "-" + max + ")", SIZE.TEXT.X, SIZE.TEXT.Y);
 
@@ -264,7 +342,7 @@
 
 				for( var line = 0, length = this.fps.array.length; line < length; line++ ){
 
-					var height = (((this.fps.array[line] / this.fps.max) * SIZE.FRAMES.HEIGHT) || 0);
+					var height = (((this.fps.array[line] / this.fps.max) * SIZE.FRAMES.HEIGHT) || 0);
 
 					var x = SIZE.FRAMES.X + line;
 					var y = (SIZE.FRAMES.Y + SIZE.FRAMES.HEIGHT) - height;
@@ -274,7 +352,7 @@
 				};
 
 			}
-			else if( this.mode == MODES.MS ){
+			else if( this.mode === MODES.MS ){
 
 				this.context.fillStyle = STYLE.MS.BACKGROUND;
 				this.context.fillRect(0, 0, SIZE.WIDTH, SIZE.HEIGHT);
@@ -284,14 +362,17 @@
 
 				this.context.fillStyle = STYLE.MS.DATAS;
 
-				if( this.realTime == true ){
+				var min = (this.ms.min === Infinity ? "∞" : this.ms.min);
+				var max = (this.ms.max === -Infinity ? "∞" : this.ms.max);
 
-					this.context.fillText(this.ms.current + " MS (" + this.ms.min + "-" + this.ms.max + ")", SIZE.TEXT.X, SIZE.TEXT.Y);
+				if( this.realTime === true ){
+
+					this.context.fillText(this.ms.current + " MS (" + min + "-" + max + ")", SIZE.TEXT.X, SIZE.TEXT.Y);
 
 				}
 				else {
 
-					this.context.fillText(this.ms.value + " MS (" + this.ms.min + "-" + this.ms.max + ")", SIZE.TEXT.X, SIZE.TEXT.Y);
+					this.context.fillText(this.ms.value + " MS (" + min + "-" + max + ")", SIZE.TEXT.X, SIZE.TEXT.Y);
 
 				};
 
@@ -307,7 +388,7 @@
 				};
 
 			}
-			else if( this.mode == MODES.MB ){
+			else if( this.mode === MODES.MB ){
 
 				this.context.fillStyle = STYLE.MB.BACKGROUND;
 				this.context.fillRect(0, 0, SIZE.WIDTH, SIZE.HEIGHT);
@@ -317,14 +398,17 @@
 
 				this.context.fillStyle = STYLE.MB.DATAS;
 
-				if( this.realTime == true ){
+				var min = (this.mb.min === Infinity ? "∞" : this.mb.min);
+				var max = (this.mb.max === -Infinity ? "∞" : this.mb.max);
 
-					this.context.fillText(this.mb.current + " MB (" + this.mb.min + "-" + this.mb.max + ")", SIZE.TEXT.X, SIZE.TEXT.Y);
+				if( this.realTime === true ){
+
+					this.context.fillText(this.mb.current + " MB (" + min + "-" + max + ")", SIZE.TEXT.X, SIZE.TEXT.Y);
 
 				}
 				else {
 
-					this.context.fillText(this.mb.value + " MB (" + this.mb.min + "-" + this.mb.max + ")", SIZE.TEXT.X, SIZE.TEXT.Y);
+					this.context.fillText(this.mb.value + " MB (" + min + "-" + max + ")", SIZE.TEXT.X, SIZE.TEXT.Y);
 
 				};
 
@@ -340,7 +424,7 @@
 				};
 
 			}
-			else if( this.mode == MODES.PING ){
+			else if( this.mode === MODES.PING ){
 
 				this.context.fillStyle = STYLE.PING.BACKGROUND;
 				this.context.fillRect(0, 0, SIZE.WIDTH, SIZE.HEIGHT);
@@ -350,14 +434,17 @@
 
 				this.context.fillStyle = STYLE.PING.DATAS;
 
-				if( this.realTime == true ){
+				var min = (this.ping.min === Infinity ? "∞" : this.ping.min);
+				var max = (this.ping.max === -Infinity ? "∞" : this.ping.max);
 
-					this.context.fillText(this.ping.current + " PING (" + this.ping.min + "-" + this.ping.max + ")", SIZE.TEXT.X, SIZE.TEXT.Y);
+				if( this.realTime === true ){
+
+					this.context.fillText(this.ping.current + " PING (" + min + "-" + max + ")", SIZE.TEXT.X, SIZE.TEXT.Y);
 
 				}
 				else {
 
-					this.context.fillText(this.ping.value + " PING (" + this.ping.min + "-" + this.ping.max + ")", SIZE.TEXT.X, SIZE.TEXT.Y);
+					this.context.fillText(this.ping.value + " PING (" + min + "-" + max + ")", SIZE.TEXT.X, SIZE.TEXT.Y);
 
 				};
 
@@ -372,6 +459,61 @@
 
 				};
 
+			} else if( this.mode === MODES.CUSTOM ){
+
+				this.context.fillStyle = STYLE.CUSTOM.BACKGROUND;
+				this.context.fillRect(0, 0, SIZE.WIDTH, SIZE.HEIGHT);
+
+				this.context.fillStyle = STYLE.CUSTOM.FRAMES;
+				this.context.fillRect(SIZE.FRAMES.X, SIZE.FRAMES.Y, SIZE.FRAMES.WIDTH, SIZE.FRAMES.HEIGHT);
+
+				this.context.fillStyle = STYLE.CUSTOM.DATAS;
+
+				var custom = this.customs[this.customIndex]
+
+				var min = (custom.min === Infinity ? "∞" : custom.min);
+				var max = (custom.max === -Infinity ? "∞" : custom.max);
+
+				for( var line = 0, length = custom.array.length; line < length; line++ ){
+
+					var height = (((custom.array[line] / custom.max) * SIZE.FRAMES.HEIGHT) || 0);
+
+					var x = SIZE.FRAMES.X + line;
+					var y = (SIZE.FRAMES.Y + SIZE.FRAMES.HEIGHT) - height;
+
+					this.context.fillRect(x, y, 1, height);
+
+				};
+
+				this.context.fillStyle = "#DDDDDD";
+
+				if( this.realTime === true ){
+					if(min < -99 || max > 99){
+						this.context.fillText(custom.object[custom.key] + " "+custom.name, SIZE.TEXT.X, SIZE.TEXT.Y);
+						this.context.fillText(min+" min", SIZE.TEXT.X, SIZE.TEXT.Y+70);
+						this.context.fillText(max+" max", SIZE.TEXT.X, SIZE.TEXT.Y+28);
+
+					} else {
+
+						this.context.fillText(custom.object[custom.key] + " "+custom.name+" (" + min + "-" + max + ")", SIZE.TEXT.X, SIZE.TEXT.Y);
+
+					}
+				}
+				else {
+					if(min < -99 || max > 99){
+						this.context.fillText(custom.value + " "+custom.name, SIZE.TEXT.X, SIZE.TEXT.Y);
+						this.context.fillText(min+" min", SIZE.TEXT.X, SIZE.TEXT.Y+70);
+						this.context.fillText(max+" max", SIZE.TEXT.X, SIZE.TEXT.Y+28);
+
+					} else {
+
+						this.context.fillText(custom.value + " "+custom.name+" (" + min + "-" + max + ")", SIZE.TEXT.X, SIZE.TEXT.Y);
+
+					}
+
+
+				};
+
 			};
 
 		}
@@ -379,7 +521,7 @@
 
 	Stats.methods.initialize.prototype = Stats.methods;
 
-	if( typeof define !== "undefined" && define instanceof Function && define.amd != undefined ){
+	if( typeof define !== "undefined" && define instanceof Function && define.amd !== undefined ){
 
 		define(function(){
 
