@@ -18,13 +18,13 @@ toogle = ()->
 		GUI.domElement.parentNode.style.display = 'none'
 	return
 
-require('./Interactions').onKeyDown.add((e)->
-    # hide gui on touch g
-	if e == 71
-		toogle()
-)
+# require('./Interactions').onKeyDown.add((e)->
+#     # hide gui on touch g
+# 	if e == 71
+# 		toogle()
+# )
 
-if(document.location.hostname != "localhost")
-	toogle()
-	
+# if(document.location.hostname != "localhost")
+# 	toogle()
+
 module.exports = GUI

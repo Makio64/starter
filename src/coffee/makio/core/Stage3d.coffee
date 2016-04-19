@@ -22,7 +22,7 @@ class Stage3d
 
 	@clearAuto				= false
 	@clearAlpha				= 1
-	@clearColor				= 0xFFFFFF
+	@models = {}
 
 	@init = (options)=>
 
@@ -33,7 +33,7 @@ class Stage3d
 
 		@onBeforeRenderer = new signals()
 
-		@clearColor = if options.background then options.background else 0xFFFFFF
+		@clearColor = if options.background then options.background else 0xFF0000
 
 		w = window.innerWidth
 		h = window.innerHeight
@@ -50,14 +50,21 @@ class Stage3d
 		transparent = options.transparent||false
 		antialias = options.antialias||false
 		@renderer = new THREE.WebGLRenderer({alpha:transparent,antialias:antialias,preserveDrawingBuffer:false})
+
+		console.log @renderer
 		@renderer.setPixelRatio( window.devicePixelRatio )
 		@renderer.domElement.className = 'three'
 		@setColorFromOption(options)
 		@renderer.setSize( w, h )
 		@isInit = true
 
-		# @initPostProcessing()
 		@activate()
+		return
+
+	@setClearColor = (value)=>
+		@clearColor = value
+		@mesh.material.color = @clearColor
+		@renderer.setClearColor( @clearColor,1 )
 		return
 
 	@setColorFromOption = (options)=>
@@ -120,7 +127,7 @@ class Stage3d
 		return
 
 	@render = (dt)=>
-		@renderer.autoClearColor = @clearAuto
+		@renderer.autoClearColor = @clearColor
 		@renderer.autoClear = @clearAuto
 		@mesh.material.opacity = @clearAlpha
 

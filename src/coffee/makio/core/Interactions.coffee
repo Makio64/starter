@@ -106,7 +106,7 @@ class Interactions
 		);
 		if(@isTouchDevice)
 			window.addEventListener('touchstart', (e)=>
-				@mouseIsDown = true
+				@mouseIsDown	 = true
 				@onDown.dispatch(@getTouchValue(e))
 			)
 			window.addEventListener('touchend', (e)=>
